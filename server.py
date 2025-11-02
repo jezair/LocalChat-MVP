@@ -1,38 +1,50 @@
-from socket import *
+import socket
 import threading
 
-server_socket = socket(AF_INET, SOCK_STREAM)
-server_socket.bind(('localhost', 8080))  # Use a fixed port
-server_socket.listen(5)
-print("Server running...")
+HOST = '0.0.0.0'
+PORT = 8080
 
 clients = []
 
 
-def broadcast(message):
-    for client in clients:
-        try:
-            client.send(f"{message}\n".encode())
-        except:
-            pass
+def broadcast(data, exclude_socket=None):
+   for client in clients:
+       if client != exclude_socket:
+           try:
+               client.sendall(data)
+           except:
+               pass
 
 
 def handle_client(client_socket):
-    name = client_socket.recv(1024).decode().strip()
-    broadcast(f"{name} joined!")
+   while True:
+       try:
+           data = client_socket.recv(4096)
+           if not data:
+               break
+           broadcast(data, exclude_socket=client_socket)
+       except:
+           break
+   if client_socket in clients:
+       clients.remove(client_socket)
+   client_socket.close()
 
-    while True:
-        try:
-            message = client_socket.recv(1024).decode().strip()
-            broadcast(f"{name}: {message}")
-        except:
-            clients.remove(client_socket)
-            broadcast(f"{name} left!")
-            client_socket.close()
-            break
+
+def main():
+   server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+   server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+   server_socket.bind((HOST, PORT))
+   server_socket.listen(5)
+   print(f"Сервер запущено на {HOST}:{PORT}")
+
+   while True:
+       client_socket, addr = server_socket.accept()
+       print(f"Підключився клієнт: {addr}")
+       clients.append(client_socket)
+
+       t = threading.Thread(target=handle_client, args=(client_socket,))
+       t.start()
 
 
-while True:
-    client_socket, addr = server_socket.accept()
-    clients.append(client_socket)
-    threading.Thread(target=handle_client, args=(client_socket,), daemon=True).start()
+if __name__ == "__main__":
+   main()
