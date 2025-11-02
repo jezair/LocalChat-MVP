@@ -81,6 +81,7 @@ class MainWindow(CTk):
        self.chat_field.insert(END, 'Я: ' + text + '\n')
        self.chat_field.configure(state='disable')
 
+
    def send_message(self):
        message = self.message_entry.get()
        if message:
