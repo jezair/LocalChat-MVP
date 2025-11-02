@@ -3,6 +3,7 @@ from socket import *
 from customtkinter import *
 
 
+
 class MainWindow(CTk):
    def __init__(self):
        super().__init__()
