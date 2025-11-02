@@ -75,6 +75,7 @@ class MainWindow(CTk):
 
        self.after(50, self.adaptive_ui)
 
+
    def add_message(self, text):
        self.chat_field.configure(state='normal')
        self.chat_field.insert(END, 'Я: ' + text + '\n')
