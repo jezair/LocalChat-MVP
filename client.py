@@ -91,6 +91,7 @@ class MainWindow(CTk):
                pass
        self.message_entry.delete(0, END)
 
+
    def recv_message(self):
        buffer = ""
        while True:
