@@ -5,6 +5,7 @@ from tkinter import filedialog  # <-- для вибору файлів
 import pygame  # <-- для музики
 
 
+
 class MainWindow(CTk):
     def __init__(self):
         super().__init__()
