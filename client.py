@@ -5,7 +5,6 @@ from tkinter import filedialog, messagebox
 import pygame
 import os
 
-# Налаштування зовнішнього вигляду CustomTkinter
 set_appearance_mode("dark")
 set_default_color_theme("blue")
 
@@ -17,7 +16,7 @@ class MainWindow(CTk):
         self.geometry("700x460")
         self.minsize(1200, 600)
 
-        # ---------- (НОВЕ) ЛОГІКА ЧАТІВ ----------
+        # ---------- ЛОГІКА ЧАТІВ ----------
         self.current_chat = "Основний"
         self.CHAT_FILES = {"Основний": "main.txt", "Збережені": "saved.txt"}
 
@@ -26,8 +25,7 @@ class MainWindow(CTk):
         self.port = port
         self.username = "Artem"
         self.sock = None
-        self.connected = False  # (НОВЕ)
-        # self.connect_to_server() # (ВИДАЛЕНО) Більше не підключаємось автоматично
+        self.connected = False
 
         # ---------- PYGAME (MUSIC) ----------
         pygame.mixer.init()
@@ -39,15 +37,14 @@ class MainWindow(CTk):
         self.menu_frame = CTkFrame(self, width=0, height=self.winfo_height(), fg_color=("gray20", "gray90"))
         self.menu_frame.place(x=0, y=0)
 
-        # (ВИПРАВЛЕННЯ) Забороняємо фрейму змінювати розмір під вміст
         self.menu_frame.pack_propagate(False)
 
         self.menu_width = 0
-        self.menu_speed = 12  # швидкість анімації (пікселів за крок)
+        self.menu_speed = 12  # швидкість анімації
         self.menu_open = False
         self.target_width = 240
 
-        # --- меню: вміст ---
+        # --- меню ---
         self._build_menu_widgets()
 
         # ---------- Кнопка відкриття меню ----------
@@ -68,15 +65,13 @@ class MainWindow(CTk):
         self.sticker_btn = CTkButton(self, text="😀", width=40, height=36, command=self.open_stickers)
         self.sticker_btn.place(x=435, y=376)
 
-        # ---------- STATUS BAR (ОНОВЛЕНО) ----------
+        # ---------- STATUS BAR ----------
         self.status_label = CTkLabel(self,
                                      text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}")
         self.status_label.place(x=40, y=28)
 
-        # ---------- адаптивний інтерфейс і loop ----------
         self.after(15, self.adaptive_ui)
 
-        # (НОВЕ) Завантажуємо стартовий чат
         self.load_chat_messages()
 
     # ---------- NETWORK ----------
@@ -84,13 +79,11 @@ class MainWindow(CTk):
         try:
             self.sock = socket(AF_INET, SOCK_STREAM)
             self.sock.settimeout(5)
-            # (ВИПРАВЛЕНО) Правильний відступ
             self.sock.connect((self.host, self.port))
             self.sock.settimeout(None)
             hello = f"TEXT@{self.username}@[SYSTEM] {self.username} приєднався(лась) до чату!\n"
             self.sock.sendall(hello.encode('utf-8'))
 
-            # (ОНОВЛЕНО) Оновлюємо UI про успішне підключення
             self.connected = True
             self.connect_status_label.configure(text="Підключено", text_color="green")
             self.connect_subscribe_btn.configure(text="Оновити ім'я ✅")
@@ -98,7 +91,6 @@ class MainWindow(CTk):
             threading.Thread(target=self.recv_message, daemon=True).start()
         except Exception as e:
             self.sock = None
-            # (ОНОВЛЕНО) Оновлюємо UI про помилку
             self.connected = False
             self.connect_status_label.configure(text="Помилка підключення", text_color="red")
             print(f"Не вдалося підключитися: {e}")
@@ -117,22 +109,19 @@ class MainWindow(CTk):
                     line, buffer = buffer.split("\n", 1)
                     self.handle_line(line.strip())
             except Exception:
-                # (ВИПРАВЛЕНО) Правильний відступ
                 pass
         self.sock = None
         self.connected = False  # (НОВЕ)
         self.add_message("[SYSTEM] Відключено від сервера.")
 
-        # (НОВЕ) Оновлюємо UI про відключення
         self.connect_status_label.configure(text="Відключено", text_color="red")
         self.connect_subscribe_btn.configure(text="Підключитися")
 
-    # (ОНОВЛЕНО) Обробка вхідних повідомлень
     def handle_line(self, line):
         if not line:
             return
 
-        message_text = line  # Повідомлення за замовчуванням
+        message_text = line
 
         parts = line.split("@", 3)
         msg_type = parts[0]
@@ -148,17 +137,13 @@ class MainWindow(CTk):
                 filename = parts[2]
                 message_text = f"{author} надіслав(ла) зображення: {filename}"
 
-        # (НОВЕ) 1. Завжди зберігаємо повідомлення у файл "Основний"
         self.add_message_to_file(message_text, chat_name="Основний")
 
-        # (НОВЕ) 2. Показуємо повідомлення, ТІЛЬКИ якщо активний "Основний" чат
         if self.current_chat == "Основний":
             self.add_message(message_text)
 
     # ---------- UI: меню ----------
-    # (ОНОВЛЕНО) Додано перемикач чатів
     def _build_menu_widgets(self):
-        # Очистимо фрейм
         for w in self.menu_frame.winfo_children():
             w.destroy()
 
@@ -172,15 +157,12 @@ class MainWindow(CTk):
         self.entry_name = CTkEntry(self.menu_frame, placeholder_text=self.username)
         self.entry_name.pack(pady=2, padx=10, fill="x")
 
-        # (ОНОВЛЕНО) Кнопка тепер для підключення / оновлення
         self.connect_subscribe_btn = CTkButton(self.menu_frame, text="Підключитися", command=self.connect_or_subscribe)
         self.connect_subscribe_btn.pack(pady=8, padx=10, fill="x")
 
-        # (НОВЕ) Статус підключення
         self.connect_status_label = CTkLabel(self.menu_frame, text="Не підключено", text_color="red")
         self.connect_status_label.pack(pady=(0, 8), padx=10)
 
-        # (НОВЕ) Перемикач чатів
         self.chat_switch_label = CTkLabel(self.menu_frame, text="Чати")
         self.chat_switch_label.pack(pady=(6, 2))
         self.chat_switch_frame = CTkFrame(self.menu_frame, fg_color="transparent")
@@ -193,7 +175,6 @@ class MainWindow(CTk):
         self.btn_saved_chat = CTkButton(self.chat_switch_frame, text="Збережені",
                                         command=lambda: self.switch_chat("Збережені"))
         self.btn_saved_chat.pack(side="right", expand=True, padx=2)
-        # ---
 
         # Роздільник
         self.sep1 = CTkLabel(self.menu_frame, text="──────────")
@@ -252,8 +233,6 @@ class MainWindow(CTk):
         self.send_btn.place(x=base_x + 345, y=376)
         self.sticker_btn.place(x=base_x + 395, y=376)
 
-        # (ОНОВЛЕНО) Оновлюємо позицію status_label
-        # (текст оновлюється в switch_chat)
         self.status_label.place(x=base_x, y=28)
         self.status_label.configure(text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}")
 
@@ -267,7 +246,6 @@ class MainWindow(CTk):
             self.music_file = file_path
             fname = os.path.basename(file_path)
             self.add_message(f"🎵 Обрано музику: {fname}")
-            # (ОНОВЛЕНО) Оновлюємо статус-бар, зберігаючи інфо про чат
             self.status_label.configure(
                 text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}  |  Музика: {fname}")
 
@@ -300,7 +278,6 @@ class MainWindow(CTk):
 
     # ---------- CHAT (НОВІ ФУНКЦІЇ) ----------
 
-    # (НОВЕ) Перемикання чату
     def switch_chat(self, chat_name):
         if chat_name == self.current_chat:
             return
@@ -308,14 +285,11 @@ class MainWindow(CTk):
         self.current_chat = chat_name
         self.load_chat_messages()
 
-        # Оновлюємо статус-бар (помітка)
         self.status_label.configure(text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}")
 
-        # Закриваємо меню для зручності
         if self.menu_open:
             self.toggle_menu()
 
-    # (НОВЕ) Завантаження повідомлень із файлу
     def load_chat_messages(self):
         self.chat_text.configure(state="normal")
         self.chat_text.delete("1.0", "end")
@@ -332,7 +306,6 @@ class MainWindow(CTk):
         self.chat_text.configure(state="disabled")
         self.chat_text.see("end")
 
-    # (НОВЕ) Додавання повідомлення у файл
     def add_message_to_file(self, message, chat_name=None):
         if chat_name:
             filepath = self.CHAT_FILES.get(chat_name)
@@ -340,7 +313,7 @@ class MainWindow(CTk):
             filepath = self.CHAT_FILES.get(self.current_chat)
 
         if not filepath:
-            return  # Нікуди зберігати
+            return
 
         try:
             with open(filepath, "a", encoding="utf-8") as f:
@@ -348,33 +321,27 @@ class MainWindow(CTk):
         except Exception as e:
             print(f"Помилка запису у файл {filepath}: {e}")
 
-    # (ОНОВЛЕНО) 'add_message' тепер ТІЛЬКИ додає в Textbox
     def add_message(self, text):
         self.chat_text.configure(state="normal")
         self.chat_text.insert("end", text + "\n")
         self.chat_text.configure(state="disabled")
         self.chat_text.see("end")
 
-    # (ОНОВЛЕНО) 'send_message' тепер враховує активний чат
     def send_message(self):
         msg = self.message_input.get().strip()
         if not msg:
             return
 
-        # (НОВЕ) Перевірка підключення
         if self.current_chat == "Основний" and not self.connected:
             self.add_message("⚠️ Спочатку підключіться до сервера!")
             return
 
         full_message = f"{self.username}: {msg}"
 
-        # 1. (НОВЕ) Завжди зберігаємо у поточний файл
         self.add_message_to_file(full_message)
 
-        # 2. (НОВЕ) Завжди відображаємо локально
         self.add_message(full_message)
 
-        # 3. (ОНОВЛЕНО) Надсилаємо в мережу, ТІЛЬКИ якщо це "Основний" чат
         if self.current_chat == "Основний":
             data = f"TEXT@{self.username}@{msg}\n"
             if self.sock:
@@ -387,7 +354,7 @@ class MainWindow(CTk):
 
         self.message_input.delete(0, "end")
 
-    # ---------- STICKERS (ОНОВЛЕНО) ----------
+    # ---------- STICKERS ----------
     def open_stickers(self):
         stickers = [
             "😀", "😃", "😄", "😁", "😆", "😅", "😂", "🤣", "😊", "😇",
@@ -406,19 +373,13 @@ class MainWindow(CTk):
                             command=lambda x=s: self.add_sticker(x))
             btn.grid(row=i // 10, column=i % 10, padx=6, pady=6)
 
-    # (ОНОВЛЕНО) 'add_sticker' тепер враховує активний чат
     def add_sticker(self, s):
         message_text = f"{self.username} sent a sticker: {s}"
-
-        # 1. (НОВЕ) Зберігаємо у поточний файл
         self.add_message_to_file(message_text)
 
-        # 2. (НОВЕ) Відображаємо
         self.add_message(message_text)
 
-        # 3. (ОНОВЛЕНО) Надсилаємо в мережу, ТІЛЬКИ якщо це "Основний" чат
         if self.current_chat == "Основний":
-            # (НОВЕ) Перевірка підключення
             if not self.connected:
                 self.add_message("⚠️ Спочатку підключіться до сервера!")
                 return
@@ -429,7 +390,6 @@ class MainWindow(CTk):
             except Exception:
                 pass
 
-    # (ОНОВЛЕНО) Функція тепер обробляє і ПІДКЛЮЧЕННЯ, і ОНОВЛЕННЯ
     def connect_or_subscribe(self):
         name = self.entry_name.get().strip()
         if not name:
@@ -437,17 +397,13 @@ class MainWindow(CTk):
             return
 
         if not self.connected:
-            # --- Логіка підключення ---
             self.username = name
-            # Оновлюємо статус-бар (помітка)
             self.status_label.configure(
                 text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}")
             self.connect_status_label.configure(text="Підключення...", text_color="orange")
-            # Запускаємо в потоці, щоб не блокувати UI
             threading.Thread(target=self.connect_to_server, daemon=True).start()
 
         else:
-            # --- Логіка оновлення імені (стара функція subscribe) ---
             if name == self.username:
                 messagebox.showinfo("Info", "Це ім'я вже використовується.")
                 return
@@ -458,15 +414,12 @@ class MainWindow(CTk):
             self.status_label.configure(
                 text=f"Чат: {self.current_chat} | User: {self.username} — {self.host}:{self.port}")
 
-            # повідомляємо сервер про зміну імені
             if self.sock:
                 try:
                     message_text = f"[SYSTEM] {self.username} змінив(ла) ім'я з {old}."
 
-                    # (НОВЕ) Зберігаємо системне повідомлення в "Основний"
                     self.add_message_to_file(message_text, chat_name="Основний")
 
-                    # (НОВЕ) Показуємо, якщо активний "Основний"
                     if self.current_chat == "Основний":
                         self.add_message(message_text)
 
@@ -477,32 +430,24 @@ class MainWindow(CTk):
 
     # ---------- THEME ----------
     def change_theme(self, value):
-        # (ДОПИСАНО) value приходить як "Dark" або "Light"
         set_appearance_mode("dark" if value == "Dark" else "light")
 
-    # ---------- ADAPTIVE UI (оновлення позицій під час resize) ----------
+    # ---------- ADAPTIVE UI ----------
     # (ДОПИСАНО)
     def adaptive_ui(self):
         try:
-            # 1. Оновлюємо висоту меню
             self.menu_frame.configure(height=self.winfo_height())
 
-            # 2. Оновлюємо ширину меню (на основі self.menu_width)
             self.menu_frame.configure(width=self.menu_width)
 
-            # 3. Оновлюємо колір (щоб він відповідав темі)
             self.menu_frame.configure(fg_color=("gray20" if get_appearance_mode().lower() == "dark" else "gray90"))
 
-            # 4. Переміщуємо основні елементи
             self._move_main_ui(self.menu_width)
         except Exception:
             pass
-
-        # 5. Повторюємо цикл (на тій самій швидкості, що і в __init__)
         self.after(15, self.adaptive_ui)
 
 
 if __name__ == "__main__":
-    # (ДОПИСАНО)
     win = MainWindow()
     win.mainloop()
